@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 import json
 import logging
+import sys
 from multiprocessing.pool import ThreadPool
 
 from dateutil.parser import parse as dparse
@@ -136,6 +137,7 @@ class DruidCluster(Model, AuditMixinNullable, ImportMixin):
         Fetches metadata for the specified datasources andm
         merges to the Superset database
         """
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         session = db.session
         ds_list = (
             session.query(DruidDatasource)
@@ -258,6 +260,7 @@ class DruidColumn(Model, BaseColumn):
             return json.loads(self.dimension_spec_json)
 
     def get_metrics(self):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         metrics = {}
         metrics['count'] = DruidMetric(
             metric_name='count',
@@ -340,6 +343,7 @@ class DruidColumn(Model, BaseColumn):
 
     def generate_metrics(self):
         """Generate metrics based on the column metadata"""
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         metrics = self.get_metrics()
         dbmetrics = (
             db.session.query(DruidMetric)
@@ -408,6 +412,7 @@ class DruidMetric(Model, BaseMetric):
 
     @classmethod
     def import_obj(cls, i_metric):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         def lookup_obj(lookup_metric):
             return db.session.query(DruidMetric).filter(
                 DruidMetric.datasource_id == lookup_metric.datasource_id,
@@ -580,6 +585,7 @@ class DruidDatasource(Model, BaseDatasource):
 
     def latest_metadata(self):
         """Returns segment metadata from the latest segment"""
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         logging.info('Syncing datasource [{}]'.format(self.datasource_name))
         client = self.cluster.get_pydruid_client()
         try:
@@ -742,6 +748,7 @@ class DruidDatasource(Model, BaseDatasource):
     # TODO: pass origin from the UI
     @staticmethod
     def granularity(period_name, timezone=None, origin=None):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         if not period_name or period_name == 'all':
             return 'all'
         iso_8601_dict = {
@@ -791,6 +798,7 @@ class DruidDatasource(Model, BaseDatasource):
         For a metric specified as `postagg` returns the
         kind of post aggregation for pydruid.
         """
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         if mconf.get('type') == 'javascript':
             return JavascriptPostAggregator(
                 name=mconf.get('name', ''),
@@ -841,6 +849,7 @@ class DruidDatasource(Model, BaseDatasource):
 
     @staticmethod
     def recursive_get_fields(_conf):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         _type = _conf.get('type')
         _field = _conf.get('field')
         _fields = _conf.get('fields')
@@ -857,6 +866,7 @@ class DruidDatasource(Model, BaseDatasource):
 
     @staticmethod
     def resolve_postagg(postagg, post_aggs, agg_names, visited_postaggs, metrics_dict):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         mconf = postagg.json_obj
         required_fields = set(
             DruidDatasource.recursive_get_fields(mconf)
@@ -886,6 +896,7 @@ class DruidDatasource(Model, BaseDatasource):
     def metrics_and_post_aggs(metrics, metrics_dict):
         # Separate metrics into those that are aggregations
         # and those that are post aggregations
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         agg_names = set()
         postagg_names = []
         for metric_name in metrics:
@@ -908,6 +919,7 @@ class DruidDatasource(Model, BaseDatasource):
                           column_name,
                           limit=10000):
         """Retrieve some values for the given column"""
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         logging.info(
             'Getting values for columns [{}] limited to [{}]'
             .format(column_name, limit))
@@ -930,12 +942,34 @@ class DruidDatasource(Model, BaseDatasource):
         client = self.cluster.get_pydruid_client()
         client.topn(**qry)
         df = client.export_pandas()
-        return [row[column_name] for row in df.to_records(index=False)]
+        values = [row[column_name] for row in df.to_records(index=False)]
+
+        #lookups
+        columns_dict = {c.column_name: c for c in self.columns}
+        groupby = [column_name,]
+        dimensions = self.get_dimensions(groupby, columns_dict)
+        maps = dict()
+        if type(dimensions) == list and len(dimensions)>0:
+            dimension = dimensions[0]
+            if type(dimension) == dict and dimension['lookup'] and dimension['lookup']['map']:
+                maps = dimension['lookup']['map']
+        mapped_result = dict()
+        for value in values:
+            if maps.has_key(value):
+                mapped_result[value] = maps[value]
+            else:
+                mapped_result[value] = value
+
+        return mapped_result
 
     def get_query_str(self, query_obj, phase=1, client=None):
-        return self.run_query(client=client, phase=phase, **query_obj)
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
+        query_str = self.run_query(client=client, phase=phase, **query_obj)
+        logging.info('testtest get query str:[{}]'.format(query_str))
+        return query_str
 
     def _add_filter_from_pre_query_data(self, df, dimensions, dim_filter):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         ret = dim_filter
         if df is not None and not df.empty:
             new_filters = []
@@ -958,6 +992,7 @@ class DruidDatasource(Model, BaseDatasource):
         return ret
 
     def get_aggregations(self, all_metrics):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         aggregations = OrderedDict()
         for m in self.metrics:
             if m.metric_name in all_metrics:
@@ -965,6 +1000,7 @@ class DruidDatasource(Model, BaseDatasource):
         return aggregations
 
     def check_restricted_metrics(self, aggregations):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         rejected_metrics = [
             m.metric_name for m in self.metrics
             if m.is_restricted and
@@ -977,6 +1013,7 @@ class DruidDatasource(Model, BaseDatasource):
             )
 
     def get_dimensions(self, groupby, columns_dict):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         dimensions = []
         groupby = [gb for gb in groupby if gb in columns_dict]
         for column_name in groupby:
@@ -1007,6 +1044,7 @@ class DruidDatasource(Model, BaseDatasource):
         """Runs a query against Druid and returns a dataframe.
         """
         # TODO refactor into using a TBD Query object
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         client = client or self.cluster.get_pydruid_client()
 
         if not is_timeseries:
@@ -1059,6 +1097,7 @@ class DruidDatasource(Model, BaseDatasource):
         if len(groupby) == 0 and not having_filters:
             logging.info('Running timeseries query for no groupby values')
             del qry['dimensions']
+            logging.info('client timeseries:[{}]'.format(qry))
             client.timeseries(**qry)
         elif (
             not having_filters and
@@ -1173,6 +1212,7 @@ class DruidDatasource(Model, BaseDatasource):
         return query_str
 
     def query(self, query_obj):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         qry_start_dttm = datetime.now()
         client = self.cluster.get_pydruid_client()
         query_str = self.get_query_str(
@@ -1215,6 +1255,7 @@ class DruidDatasource(Model, BaseDatasource):
 
     @staticmethod
     def get_filters(raw_filters, num_cols):  # noqa
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         filters = None
         for flt in raw_filters:
             if not all(f in flt for f in ['col', 'op', 'val']):
@@ -1302,6 +1343,7 @@ class DruidDatasource(Model, BaseDatasource):
         return cond
 
     def get_having_filters(self, raw_filters):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         filters = None
         reversed_op_map = {
             '!=': '==',
@@ -1330,6 +1372,7 @@ class DruidDatasource(Model, BaseDatasource):
     @classmethod
     def query_datasources_by_name(
             cls, session, database, datasource_name, schema=None):
+        logging.info('testtest [{}]'.format(sys._getframe().f_code.co_name))
         return (
             session.query(cls)
             .filter_by(cluster_name=database.id)

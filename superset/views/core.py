@@ -1183,11 +1183,13 @@ class Superset(BaseSupersetView):
         if not self.datasource_access(datasource):
             return json_error_response(DATASOURCE_ACCESS_ERR)
 
-        payload = json.dumps(
-            datasource.values_for_column(
+        dict_values = datasource.values_for_column(
                 column,
                 config.get('FILTER_SELECT_ROW_LIMIT', 10000),
-            ),
+            )
+        values = dict_values.items()
+        payload = json.dumps(
+            values,
             default=utils.json_int_dttm_ser)
         return json_success(payload)
 

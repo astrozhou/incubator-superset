@@ -20,7 +20,7 @@ const defaultProps = {
   datasource: {
     id: 1,
     type: 'qtable',
-    filter_select: false,
+    filter_select: true,
     filterable_cols: ['col1', 'col2'],
     metrics_combo: [
       ['m1', 'v1'],
@@ -54,7 +54,7 @@ describe('Filter', () => {
     props.datasource = {
       id: 1,
       type: 'druid',
-      filter_select: false,
+      filter_select: true,
       filterable_cols: ['country_name'],
     };
     const druidWrapper = shallow(<Filter {...props} />);

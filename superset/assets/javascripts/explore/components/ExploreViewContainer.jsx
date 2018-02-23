@@ -96,6 +96,7 @@ class ExploreViewContainer extends React.Component {
 
   triggerQueryIfNeeded() {
     if (this.props.chart.triggerQuery && !this.hasErrors()) {
+      console.log('testtest run query data:%o', this.props.form_data);
       this.props.actions.runQuery(this.props.form_data, false,
         this.props.timeout, this.props.chart.chartKey);
     }
@@ -198,7 +199,9 @@ class ExploreViewContainer extends React.Component {
 ExploreViewContainer.propTypes = propTypes;
 
 function mapStateToProps({ explore, charts }) {
+  console.log('testtest explore:%o', explore.controls);
   const form_data = getFormDataFromControls(explore.controls);
+  console.log('testtest form data:%o', form_data);
   const chartKey = Object.keys(charts)[0];
   const chart = charts[chartKey];
   return {
