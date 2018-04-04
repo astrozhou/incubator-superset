@@ -82,7 +82,7 @@ export const controls = {
   viz_type: {
     type: 'VizTypeControl',
     label: t('Visualization Type'),
-    default: 'table',
+    default: 'time_series',
     description: t('The type of visualization to display'),
   },
 
@@ -563,11 +563,7 @@ export const controls = {
     label: t('Time Granularity'),
     default: 'one day',
     choices: formatSelectOptions([
-      'all',
-      '5 seconds',
-      '30 seconds',
-      '1 minute',
-      '5 minutes',
+      '10 minutes',
       '1 hour',
       '6 hour',
       '1 day',
